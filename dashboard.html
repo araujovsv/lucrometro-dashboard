@@ -264,7 +264,7 @@
         // Carrega os dados
         async function loadData() {
             try {
-                const response = await fetch('data.json');
+                const response = await fetch('./data.json');
                 data = await response.json();
                 
                 // Inicializa os gráficos
@@ -547,3 +547,4 @@
     </script>
 </body>
 </html>
+
