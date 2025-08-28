@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucrômetro - Dashboard de Supersalários</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 80px;
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .select-container {
+            position: relative;
+        }
+
+        .select-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        select {
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        select:hover {
+            border-color: #667eea;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin: 30px 0;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .company-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .eletrobras {
+            background-color: #28a745;
+        }
+
+        .cemig {
+            background-color: #ffc107;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: #dc3545;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .section-title {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Lucrômetro</h1>
+            <br>
+            <p>Dashboard de Transparência do Setor Elétrico</p>
+            <br>
+            <p>Uma parceria entre INESC e o Instituto Ilumina</p>
+        </div>
+
+        <div class="content">
+            <!-- Seção 1: Supersalários -->
+            <div class="section">
+                <h2 class="section-title">👨‍💼 Salários</h2>
+                <p style="align-items: center; display: flex; justify-content: center;">Evolução dos salários de diretores e conselheiros das geradoras e distribuidoras de energia</p>
+                <br>
+                <br>
+                <div class="controls">
+                    <div class="select-container">
+                        <label for="cargoSelect">Selecione o Cargo:</label>
+                        <select id="cargoSelect">
+                            <option value="total_por_diretor">Diretores Estatutários</option>
+                            <option value="total_por_conselho">Conselheiros Administrativos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="salaryChart"></canvas>
+                </div>
+
+                <div class="company-legend">
+                    <div class="legend-item">
+                        <div class="legend-color eletrobras"></div>
+                        <span><strong>Eletrobrás</strong></span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color cemig"></div>
+                        <span><strong>CEMIG</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção 2: Indicadores Financeiros -->
+            <div class="section">
+                <h2 class="section-title">📊 Indicadores Financeiros</h2>
+                <p style="align-items: center; display: flex; justify-content: center;">Indicadores das empresas do setor elétrico ao longo do tempo</p>
+                <br>
+                <br>
+                
+                <div class="controls">
+                    <div class="select-container">
+                        <label for="indicadorSelect">Selecione o Indicador:</label>
+                        <select id="indicadorSelect">
+                            <option value="receita_operacional_liquida">Receita Operacional</option>
+                            <option value="lucro_liquido_exercicio">Lucro Líquido</option>
+                            <option value="EBITDA">EBITDA</option>
+                            <option value="investimentos">Investimentos</option>
+                            <option value="dividendos">Distribuição de dividendos</option>
+                            <option value="pmso">PMSO</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="financialChart"></canvas>
+                </div>
+
+                <div class="company-legend">
+                    <div class="legend-item">
+                        <div class="legend-color eletrobras"></div>
+                        <span><strong>Eletrobrás</strong></span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color cemig"></div>
+                        <span><strong>CEMIG</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let data = [];
+        let salaryChart = null;
+        let financialChart = null;
+
+        // Carrega os dados
+        async function loadData() {
+            try {
+                const response = await fetch('data.json');
+                data = await response.json();
+                
+                // Inicializa os gráficos
+                initSalaryChart();
+                initFinancialChart();
+                
+                // Adiciona event listeners
+                document.getElementById('cargoSelect').addEventListener('change', updateSalaryChart);
+                document.getElementById('indicadorSelect').addEventListener('change', updateFinancialChart);
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                document.querySelector('.content').innerHTML = '<div class="error">❌ Erro ao carregar os dados. Verifique se o arquivo data.json existe.</div>';
+            }
+        }
+
+        // Formata valores monetários
+        function formatCurrency(value) {
+            if (value === null || value === undefined || isNaN(value)) return 'R$ 0';
+            
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+
+        // Formata valores para exibição em milhões
+        function formatMillions(value) {
+            if (value === null || value === undefined || isNaN(value)) return 0;
+            return value / 1000000;
+        }
+
+        // Formata valores originais para tooltips
+        function formatOriginalValue(value) {
+            if (value === null || value === undefined || isNaN(value)) return 0;
+            return value;
+        }
+
+        // Formata valores para o eixo Y de forma inteligente
+        function formatAxisValue(value) {
+            if (value === 0) return 'R$ 0';
+            if (value < 1) {
+                return 'R$ ' + (value * 1000).toFixed(0) + 'K';
+            } else if (value < 1000) {
+                return 'R$ ' + value.toFixed(1) + 'M';
+            } else {
+                return 'R$ ' + (value / 1000).toFixed(1) + 'B';
+            }
+        }
+
+        // Prepara dados para o gráfico
+        function prepareChartData(column) {
+            const years = [...new Set(data.map(d => d.exercicio))].sort();
+            const companies = [...new Set(data.map(d => d.empresa))];
+            
+            const datasets = companies.map(company => {
+                const companyData = data.filter(d => d.empresa === company);
+                const values = years.map(year => {
+                    const yearData = companyData.find(d => d.exercicio === year);
+                    return yearData ? (yearData[column] || 0) : 0;
+                });
+                
+                const color = company.includes('ELETROBRAS') ? '#28a745' : '#ffc107';
+                const label = company.includes('ELETROBRAS') ? 'Eletrobrás' : 'CEMIG';
+                
+                return {
+                    label: label,
+                    data: values,
+                    originalData: values, // Mantém dados originais para tooltips
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: color,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                };
+            });
+            
+            return { years, datasets };
+        }
+
+        // Inicializa gráfico de salários
+        function initSalaryChart() {
+            const ctx = document.getElementById('salaryChart').getContext('2d');
+            const { years, datasets } = prepareChartData('total_por_diretor');
+            
+            salaryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Evolução dos Supersalários',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            color: '#2c3e50'
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const originalValue = context.dataset.originalData[context.dataIndex];
+                                    return context.dataset.label + ': ' + formatCurrency(originalValue);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Valor por Pessoa (R$)',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Exercício',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    },
+                    hover: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                }
+            });
+        }
+
+        // Atualiza gráfico de salários
+        function updateSalaryChart() {
+            const selectedColumn = document.getElementById('cargoSelect').value;
+            const { years, datasets } = prepareChartData(selectedColumn);
+            
+            salaryChart.data.labels = years;
+            salaryChart.data.datasets = datasets;
+            salaryChart.update();
+        }
+
+        // Inicializa gráfico financeiro
+        function initFinancialChart() {
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            const { years, datasets } = prepareChartData('receita_operacional_liquida');
+            
+            // Converte valores para milhões, mas mantém originais
+            datasets.forEach(dataset => {
+                dataset.originalData = [...dataset.data]; // Salva dados originais
+                dataset.data = dataset.data.map(value => formatMillions(value));
+            });
+            
+            financialChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Indicadores Financeiros',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            color: '#2c3e50'
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const originalValue = context.dataset.originalData[context.dataIndex];
+                                    return context.dataset.label + ': ' + formatCurrency(originalValue);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatAxisValue(value);
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Valor (R$ milhões)',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Exercício',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    },
+                    hover: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                }
+            });
+        }
+
+        // Atualiza gráfico financeiro
+        function updateFinancialChart() {
+            const selectedColumn = document.getElementById('indicadorSelect').value;
+            const { years, datasets } = prepareChartData(selectedColumn);
+            
+            // Converte valores para milhões, mas mantém originais
+            datasets.forEach(dataset => {
+                dataset.originalData = [...dataset.data]; // Salva dados originais
+                dataset.data = dataset.data.map(value => formatMillions(value));
+            });
+            
+            const titles = {
+                'receita_operacional_liquida': 'Receita Operacional',
+                'lucro_liquido_exercicio': 'Lucro Líquido',
+                'EBITDA': 'EBITDA',
+                'investimentos': 'Investimentos',
+                'dividendos': 'Distribuição de Dividendos',
+                'pmso': 'PMSO'
+            };
+            
+            financialChart.data.labels = years;
+            financialChart.data.datasets = datasets;
+            financialChart.options.plugins.title.text = titles[selectedColumn];
+            financialChart.update();
+        }
+
+        // Inicializa a aplicação
+        loadData();
+    </script>
+</body>
+</html>
